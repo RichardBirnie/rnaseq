@@ -35,11 +35,6 @@ def runFastQC(fqFiles, reportdir, nthread=1):
 	
 	print('QC reporting complete')
 
-#set up the output directory
-output = '/home/data/pbt/RNASeq/QC/FastQCreport'
-if not os.path.exists(output):
-	os.makedirs(output)
-
 if __name__ == "__main__":
 	#parse commandline arguments
 	parser = argparse.ArgumentParser(prog='runFastQC.py', description='Handle input arguments for calling FastQC')
@@ -47,8 +42,15 @@ if __name__ == "__main__":
 	parser.add_argument('-n', '--nthreads', help='Number of cores to be allocated. Defaults to 1 if not set')
 	args = parser.parse_args()
 
-	#get list of Fastq files, run FastQC on the fastq files
+	#get list of Fastq files
 	fq = NGSutilities.findFiles(args.input, pattern='*.fastq*')
+	
+	#set up the output directory
+	batchname = os.path.basename(args.input)
+	output = os.path.join('/home', 'data', 'pbt', 'RNASeq', 'QC', 'FastQCreports', batchname)
+	if not os.path.exists(output):
+		os.makedirs(output)
+
 	runFastQC(fq, nthread=args.nthreads, reportdir=output)
 
 	#remove the zip files that fastqc creates by default as we never use these
