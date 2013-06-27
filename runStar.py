@@ -35,15 +35,22 @@ if __name__ == "__main__":
 	#the paired read files are in the same position in their respective lists
 	left.sort()
 	right.sort()
-
+	
 	#put them back together again as a comma separated string
 	sortedFiles = ','.join(left + right)
 	
 	#construct the command
-	cmd = 'star --genomeDir ' + args.genome + ' --runThreadN ' + args.nthreads + ' --outFileNamePrefix ' + output +	' --readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq'
+	alignment = 'star --genomeDir ' + args.genome + ' --runThreadN ' + args.nthreads + ' --outFileNamePrefix ' + output +	' --readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq' + ' --outStd SAM'
 	
-	args = shlex.split(cmd)
-	done = subprocess.check_call(args)
+	#run Star, send standard out to a pipe to go to samtools below
+	align = shlex.split(alignment)
+	sam = subprocess.Popen(align, stdout=subprocess.PIPE)
+	
+	bam = 'samtools view -bS -o ' + output + 'Sample_NMB261.bam ' + '-'
+	bam = shlex.split(bam)
+	unsortedBam = subprocess.Popen(bam, stdin=sam.stdout)
+	sam.stdout.close()
+	ret = unsortedBam.communicate()[0]
 
 
 #genome = '/home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/STARgenomes/hg19'
