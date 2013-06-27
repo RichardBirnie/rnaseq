@@ -40,7 +40,7 @@ if __name__ == "__main__":
 	sortedFiles = ','.join(left + right)
 	
 	#construct the command
-	alignment = 'star --genomeDir ' + args.genome + ' --runThreadN ' + args.nthreads + ' --outFileNamePrefix ' + output +	' --readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq' + ' --outStd SAM'
+	alignment = 'star --genomeDir ' + args.genome + ' --runThreadN ' + args.nthreads + ' --outFileNamePrefix ' + output +	' --readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq' + ' --outStd SAM --outFilterMismatchNmax 2 --genomeLoad LoadAndKeep --outSAMstrandField intronMotif'
 	
 	#run Star, send standard out to a pipe to go to samtools below
 	align = shlex.split(alignment)
@@ -51,14 +51,11 @@ if __name__ == "__main__":
 	unsortedBam = subprocess.Popen(bam, stdin=sam.stdout)
 	sam.stdout.close()
 	ret = unsortedBam.communicate()[0]
-
-
-#genome = '/home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/STARgenomes/hg19'
-#nthreads = str(1)
-#fq = NGSutilities.findFiles('/home/data/pbt/RNASeq/rawData/SampledReads', pattern='*.fastq*')
-
-
-#cmd = 'star --genomeDir ' + genome + ' --runThreadN ' + nthreads + ' --outFileNamePrefix /home/data/pbt/RNASeq/BamFiles/SampledReads/subsetNMB261/ ' +	'--readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq'
-
-#commandline = shlex.split(cmd)
-#done = subprocess.check_call(commandline)
+	
+	#sort the bam file in name order ready for RNASeQC
+	#remove the unsorted file
+	sortBam = 'samtools sort -n ' + output + 'Sample_NMB261.bam ' + output + 'Sample_NMB261_sorted'
+	print(sortBam)
+	sortBam = shlex.split(sortBam)
+	sortedBam = subprocess.check_call(sortBam)
+	os.remove(os.path.join(output, 'Sample_NMB261.bam'))
