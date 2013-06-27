@@ -18,8 +18,30 @@ if __name__ == "__main__":
 	#get list of Fastq files
 	fq = NGSutilities.findFiles(args.input, pattern='*.fastq*')
 	
-	cmd = 'star --genomeDir ' + args.genome + ' --runThreadN ' + args.nthreads + ' --outFileNamePrefix /home/data/pbt/RNASeq/BamFiles/SampledReads/subsetNMB261/ ' +	'--readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq'
+	#build output directory path. If it does not exist create it
+	batchname = os.path.basename(args.input)
+	output = os.path.join('/home', 'data', 'pbt', 'RNASeq', 'BamFiles', batchname)
+	if not os.path.exists(output):
+		os.makedirs(output)
+	
+	output = output + '/'
+	
+	#organise the list of files to be compatible with STAR
+	#split this into 2 lists, left reads and right reads using conditional list comprehension
+	left = [f for f in fq if 'R1' in f]
+	right = [f for f in fq if 'R2' in f]
+	
+	#sort both lists. The order is essentially alphabetical. Important factor is that
+	#the paired read files are in the same position in their respective lists
+	left.sort()
+	right.sort()
 
+	#put them back together again as a comma separated string
+	sortedFiles = ','.join(left + right)
+	
+	#construct the command
+	cmd = 'star --genomeDir ' + args.genome + ' --runThreadN ' + args.nthreads + ' --outFileNamePrefix ' + output +	' --readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq'
+	
 	args = shlex.split(cmd)
 	done = subprocess.check_call(args)
 
@@ -27,6 +49,8 @@ if __name__ == "__main__":
 #genome = '/home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/STARgenomes/hg19'
 #nthreads = str(1)
 #fq = NGSutilities.findFiles('/home/data/pbt/RNASeq/rawData/SampledReads', pattern='*.fastq*')
+
+
 #cmd = 'star --genomeDir ' + genome + ' --runThreadN ' + nthreads + ' --outFileNamePrefix /home/data/pbt/RNASeq/BamFiles/SampledReads/subsetNMB261/ ' +	'--readFilesIn /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R1_001.fastq /home/data/pbt/RNASeq/rawData/SampledReads/Sample_NMB261/subsetNMB261_TAGCTT_L004_R2_001.fastq'
 
 #commandline = shlex.split(cmd)
