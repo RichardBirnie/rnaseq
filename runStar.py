@@ -91,11 +91,17 @@ def runCommand(c):
 	#sort the bam file in name order ready for RNASeQC
 	#remove the unsorted file
 	sortedBamFile = output + '_sorted'
-	sortBam = 'samtools sort -n ' + output + ' ' + sortedBamFile
-	print(sortBam)
+	sortBam = 'samtools sort ' + output + ' ' + sortedBamFile
+	print('Sorting Bam file: ' + sortBam)
 	sortBam = shlex.split(sortBam)
 	sortedBam = subprocess.check_call(sortBam)
 	os.remove(output)
+	
+	#index the bam file
+	indexBam = 'samtools index ' + sortedBamFile + '.bam'
+	print('Index Bam file: ' + indexBam)
+	indexBam = shlex.split(indexBam)
+	indexedBam = subprocess.check_call(indexBam)
 
 
 if __name__ == "__main__":
@@ -128,4 +134,6 @@ if __name__ == "__main__":
 	#As with the standard implementation of map(), it takes a function and 
 	#a list as arguments, and executes the function with every member of the
 	#list as the sole arguement.
+	print('Starting Alignments')
 	outputs = p.map(runCommand, commands)
+	print('Alignments Complete')
