@@ -102,6 +102,29 @@ def runCommand(c):
 	print('Index Bam file: ' + indexBam)
 	indexBam = shlex.split(indexBam)
 	indexedBam = subprocess.check_call(indexBam)
+	
+	#add read groups prior to validation
+	#picard-tools AddOrReplaceReadGroups
+	#INPUT=/home/data/pbt/RNASeq/BamFiles/SampledReads/Sample_NMB145/Sample_NMB145_sorted.bam
+	#OUTPUT=/home/data/pbt/RNASeq/BamFiles/SampledReads/Sample_NMB145/Sample_NMB145_sorted.bam
+	#SORT_ORDER=queryname RGID=SampledReads RGLB=Unknown RGPL=illumina RGPU=Unknown RGSM=Sample_NMB145
+	tmp = sortedBamFile.split('/')
+	sampleID = os.path.basename(os.path.split(sortedBamFile)[0])
+	addRG = 'picard-tools AddOrReplaceReadGroups INPUT=' + sortedBamFile + '.bam' + ' OUTPUT=' + sortedBamFile + 'RG.bam' + ' SORT_ORDER=queryname RGID=' + tmp[6] + ' RGLB=Unknown RGPL=illumina RGPU=Unknown RGSM=' + sampleID
+	print('Adding Read Groups: ' + addRG)
+	addRG = shlex.split(addRG)
+	addedRG = subprocess.check_call(addRG)
+	#od.remove(sortedBamFile + '.bam')
+	
+	#validate bam file to check for consistency with the sam format specification
+	#picard-tools ValidateSamFile
+	#INPUT=/home/data/pbt/RNASeq/BamFiles/SampledReads/Sample_NMB145/Sample_NMB145_sortedRG.bam
+	#IGNORE=MISSING_TAG_NM
+	validateBam = 'picard-tools ValidateSamFile INPUT=' + sortedBamFile + 'RG.bam' + ' OUTPUT=' + sortedBamFile + '_ValidationReport.txt' + ' IGNORE=MISSING_TAG_NM'
+	print('Validating Bam file:' + validateBam)
+	validateBam = shlex.split(validateBam)
+	validatedBame = subprocess.check_call(validateBam)
+
 
 
 if __name__ == "__main__":
