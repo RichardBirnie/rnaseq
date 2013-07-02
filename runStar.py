@@ -114,7 +114,7 @@ def runCommand(c):
 	print('Adding Read Groups: ' + addRG)
 	addRG = shlex.split(addRG)
 	addedRG = subprocess.check_call(addRG)
-	#od.remove(sortedBamFile + '.bam')
+	os.remove(sortedBamFile + '.bam')
 	
 	#validate bam file to check for consistency with the sam format specification
 	#picard-tools ValidateSamFile
