@@ -2,8 +2,13 @@
 """
 Wrapper to the FastQC program available from http://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 
-Run the FastQC program on a list of Fastq files. This requires that FastQC is installed on the current system
+Run the FastQC program on a list of Fastq files. This requires that FastQC is installed on the current system and can be accessed via typing fastqc at the commandline. This can be done by creating a symlink to the FastQC install on linux systems something like 'sudo ln -s /path/to/fastqc/installation /usr/local/bin/fastqc'
 
+This script can also be imported as a module by typing import runStar at the python interpreter provided this script is in your PYTHONPATH. This will give you access to the internal functions for interactive work
+
+Functions
+---------
+runFastQC - Run the FastQC program on a list of Fastq files. See help(runFastQC) for usage
 """
 
 #import the necessary modules
