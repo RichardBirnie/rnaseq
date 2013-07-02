@@ -45,8 +45,6 @@ def compileCommands(files, genome, output):
 	left.sort()
 	right.sort()
 	
-	#output = output + '/'
-	
 	commands = []
 	for i in range(len(left)):
 		#create output path
@@ -72,22 +70,22 @@ def runCommand(c):
 	align = shlex.split(c)
 	samplename = align[9]
 	sam = subprocess.Popen(align, stdout=subprocess.PIPE)
-	
+
 	#parse sample name to control output
 	d = os.path.dirname(samplename)
 	d = d.replace('rawData', 'BamFiles')
 	output = os.path.join(d, os.path.basename(d))
-	
+
 	if not os.path.exists(os.path.dirname(output)):
 		os.makedirs(os.path.dirname(output))
-	
+
 	#construct and call the samtools command to convert sam to bam
 	bam = 'samtools view -bS -o ' + output + ' -'
 	bam = shlex.split(bam)
 	unsortedBam = subprocess.Popen(bam, stdin=sam.stdout)
 	sam.stdout.close()
 	ret = unsortedBam.communicate()[0]
-	
+
 	#sort the bam file in name order ready for RNASeQC
 	#remove the unsorted file
 	sortedBamFile = output + '_sorted'
@@ -96,41 +94,41 @@ def runCommand(c):
 	sortBam = shlex.split(sortBam)
 	sortedBam = subprocess.check_call(sortBam)
 	os.remove(output)
-	
+
 	#index the bam file
 	indexBam = 'samtools index ' + sortedBamFile + '.bam'
 	print('Index Bam file: ' + indexBam)
 	indexBam = shlex.split(indexBam)
 	indexedBam = subprocess.check_call(indexBam)
-	
+
 	#add read groups prior to validation
-	#picard-tools AddOrReplaceReadGroups
-	#INPUT=/home/data/pbt/RNASeq/BamFiles/SampledReads/Sample_NMB145/Sample_NMB145_sorted.bam
-	#OUTPUT=/home/data/pbt/RNASeq/BamFiles/SampledReads/Sample_NMB145/Sample_NMB145_sorted.bam
-	#SORT_ORDER=queryname RGID=SampledReads RGLB=Unknown RGPL=illumina RGPU=Unknown RGSM=Sample_NMB145
 	tmp = sortedBamFile.split('/')
 	sampleID = os.path.basename(os.path.split(sortedBamFile)[0])
-	addRG = 'picard-tools AddOrReplaceReadGroups INPUT=' + sortedBamFile + '.bam' + ' OUTPUT=' + sortedBamFile + 'RG.bam' + ' SORT_ORDER=queryname RGID=' + tmp[6] + ' RGLB=Unknown RGPL=illumina RGPU=Unknown RGSM=' + sampleID
-	print('Adding Read Groups: ' + addRG)
+	addRG = 'picard-tools AddOrReplaceReadGroups INPUT=' + sortedBamFile + '.bam' + ' OUTPUT=' + sortedBamFile + 'RG.bam' + ' SORT_ORDER=queryname QUIET=TRUE RGID=' + tmp[6] + ' RGLB=Unknown RGPL=illumina RGPU=Unknown RGSM=' + sampleID
+	print('Adding Read Groups: ' + sortedBamFile + '.bam')
 	addRG = shlex.split(addRG)
 	addedRG = subprocess.check_call(addRG)
 	os.remove(sortedBamFile + '.bam')
-	
-	#validate bam file to check for consistency with the sam format specification
-	#picard-tools ValidateSamFile
-	#INPUT=/home/data/pbt/RNASeq/BamFiles/SampledReads/Sample_NMB145/Sample_NMB145_sortedRG.bam
-	#IGNORE=MISSING_TAG_NM
-	validateBam = 'picard-tools ValidateSamFile INPUT=' + sortedBamFile + 'RG.bam' + ' OUTPUT=' + sortedBamFile + '_ValidationReport.txt' + ' IGNORE=MISSING_TAG_NM'
-	print('Validating Bam file:' + validateBam)
-	validateBam = shlex.split(validateBam)
-	validatedBame = subprocess.check_call(validateBam)
 
+	#validate bam file to check for consistency with the sam format specification
+	validateBam = 'picard-tools ValidateSamFile INPUT=' + sortedBamFile + 'RG.bam' + ' OUTPUT=/dev/stdout' + ' IGNORE=MISSING_TAG_NM QUIET=TRUE'
+	print('Validating Bam file:' + sortedBamFile + 'RG.bam')
+	validateBam = shlex.split(validateBam)
+	validatedBam = subprocess.Popen(validateBam, stdout=subprocess.PIPE)
+	validationResult = validatedBam.communicate()[0]
+	validationResult = str(validationResult, encoding='utf8')
+	#check contents of validation test and report accordingly
+	if validationResult.rstrip('\n') == 'No errors found':
+		print(sortedBamFile + 'RG.bam' + ': Validation check OK')
+	else:
+		print('VALIDATION ERROR: ' + sortedBamFile + 'RG.bam' + '\n' + validationResult)
 
 
 if __name__ == "__main__":
 	#parse commandline arguments
-	parser = argparse.ArgumentParser(prog='runStar.py', description='Handle input arguments for calling STAR')
-	parser.add_argument('-i', '--input', help='Input file name or directory. Do not include the trailing / at the end of the filename as this will affect the internal operation of the script', required=True)
+	parser = argparse.ArgumentParser(prog='runStar.py', description='Use STAR to align a set of paired end fastq files. The resulting bam files are indexed using samtools index and have read groups added using picard AddOrReplaceReadGroups. The final bam file is sorted in queryname order and validated against the sam format specification using picard ValidateSamFile.')
+	
+	parser.add_argument('-i', '--input', help='Input directory. Do not include the trailing / at the end of the filename as this will affect the internal operation of the script', required=True)
 	parser.add_argument('-n', '--ncores', help='Number of cores to be allocated', required=True)
 	parser.add_argument('-g', '--genome', help='Location of the Star genome file. See the STAR manual for details', required=True)
 	args = parser.parse_args()
