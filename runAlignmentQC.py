@@ -112,11 +112,10 @@ def runCommand(c):
 	
 	#specify locations of the annotation files describing coordinates of genes in the genome
 	gtfFile = '/home/data/genomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/gencode.v7.annotation.gtf'
-	gcFile = '/home/data/genomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/gencode.v7.gc.gtf'
 	#compile string for the -s argument. This tells RNASeQC where to look for the bam file
 	#quote pattern at start and end of line is needed to enclose the main string in double quotes
 	s = '"' + '|'.join([sample, savepath, batchname]) + '"'
-	runQC = 'java -jar /opt/RNA-SeQC/RNA-SeQC_v1.1.7.jar'  + ' -s ' + s + ' -o ' + d + ' -n 1000 -t ' + gtfFile + ' -r /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa -strat gc -gc ' + gcFile
+	runQC = 'java -jar /opt/RNA-SeQC/RNA-SeQC_v1.1.7.jar'  + ' -s ' + s + ' -o ' + d + ' -n 1000 -t ' + gtfFile + ' -r /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa'
 	runQC = shlex.split(runQC)
 	qc = subprocess.check_call(runQC)
 	
