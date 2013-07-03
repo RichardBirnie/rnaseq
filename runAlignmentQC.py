@@ -129,7 +129,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(prog='runAlignmentQC.py', description='Use the Broad Institute tool RNASeQC (http://www.broadinstitute.org/cancer/cga/rna-seqc) to generate quality control metrics for a series of Bam files')
 	
 	parser.add_argument('-i', '--input', help='Input directory. Do not include the trailing / at the end of the filename as this will affect the internal operation of the script', required=True)
-	parser.add_argument('-n', '--ncores', help='Number of cores to be allocated', required=True)
+	parser.add_argument('-n', '--ncores', help='Number of cores to be allocated. Defaults to 1 if not set', default=1)
 	parser.add_argument('-r', '--reference', help='Reference sequence in fasta format. Used by picard-tools ReorderSam to prepare the bam file prior to running RNASeQC. A sequence dictionary corresponding to the reference sequence should be presenting in the same directory. See Picard manual for details ', required=True)
 	args = parser.parse_args()
 	

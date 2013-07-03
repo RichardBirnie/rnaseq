@@ -130,7 +130,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(prog='runStar.py', description='Use STAR to align a set of paired end fastq files. The resulting bam files are indexed using samtools index and have read groups added using picard AddOrReplaceReadGroups. The final bam file is sorted in genome coordinate order and validated against the sam format specification using picard ValidateSamFile.')
 	
 	parser.add_argument('-i', '--input', help='Input directory. Do not include the trailing / at the end of the filename as this will affect the internal operation of the script', required=True)
-	parser.add_argument('-n', '--ncores', help='Number of cores to be allocated', required=True)
+	parser.add_argument('-n', '--ncores', help='Number of cores to be allocated. Defaults to 1 if not set', default=1)
 	parser.add_argument('-g', '--genome', help='Location of the Star genome file. See the STAR manual for details', required=True)
 	args = parser.parse_args()
 	
