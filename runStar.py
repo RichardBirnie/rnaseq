@@ -86,20 +86,6 @@ def runCommand(c):
 	sam.stdout.close()
 	ret = unsortedBam.communicate()[0]
 	
-	##THIS needs to be rearranged. Send unsorted Bam file directly to AddOrReplaceReadGroups and have this output in coordinate order
-	##index the bam file in coordinate order
-	##Alternatively don't do any sorting at this stage. Just add the read groups and validate the file format
-	##sorting and indexing can be handled in runAlignmentQC to satisfy RNASeQC which appears to be the most pedantic
-	
-	##sort the bam file in coordinate order ready for RNASeQC
-	##remove the unsorted file
-	##sortedBamFile = output + '_sorted'
-	##sortBam = 'samtools sort ' + output + ' ' + sortedBamFile
-	##print('Sorting Bam file: ' + sortBam)
-	##sortBam = shlex.split(sortBam)
-	##sortedBam = subprocess.check_call(sortBam)
-	##os.remove(output)
-	
 	#add read groups prior to validation
 	#Nte that this sorts the bam file in coordinate order on the way out
 	sampleID = os.path.basename(output)
@@ -109,6 +95,12 @@ def runCommand(c):
 	addRG = shlex.split(addRG)
 	addedRG = subprocess.check_call(addRG)
 	os.remove(output + '.bam')
+	
+	#index the bam file
+	indexBam = 'samtools index ' + output + '_sortedRG.bam'
+	print('Index Bam file: ' + indexBam)
+	indexBam = shlex.split(indexBam)
+	indexedBam = subprocess.check_call(indexBam)
 	
 	#validate bam file to check for consistency with the sam format specification
 	validateBam = 'picard-tools ValidateSamFile INPUT=' + output + '_sortedRG.bam' + ' OUTPUT=/dev/stdout' + ' IGNORE=MISSING_TAG_NM QUIET=TRUE'
@@ -133,6 +125,10 @@ if __name__ == "__main__":
 	parser.add_argument('-n', '--ncores', help='Number of cores to be allocated. Defaults to 1 if not set', default=1)
 	parser.add_argument('-g', '--genome', help='Location of the Star genome file. See the STAR manual for details', required=True)
 	args = parser.parse_args()
+	
+	#sanity check input file name
+	#remove trailing / if there is one
+	args.input = args.input.rstrip('/')
 	
 	#get list of Fastq files
 	fq = NGSutilities.findFiles(args.input, pattern='*.fastq*')

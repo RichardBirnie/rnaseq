@@ -111,7 +111,7 @@ def runCommand(c):
 		os.makedirs(os.path.dirname(d))
 	
 	#specify locations of the annotation files describing coordinates of genes in the genome
-	gtfFile = '/home/data/genomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/gencode.v7.annotation.gtf'
+	gtfFile = '/home/data/genomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/Gencode17/gencode.v17.annotation.gtf'
 	#compile string for the -s argument. This tells RNASeQC where to look for the bam file
 	#quote pattern at start and end of line is needed to enclose the main string in double quotes
 	s = '"' + '|'.join([sample, savepath, batchname]) + '"'
@@ -131,6 +131,10 @@ if __name__ == "__main__":
 	parser.add_argument('-n', '--ncores', help='Number of cores to be allocated. Defaults to 1 if not set', default=1)
 	parser.add_argument('-r', '--reference', help='Reference sequence in fasta format. Used by picard-tools ReorderSam to prepare the bam file prior to running RNASeQC. A sequence dictionary corresponding to the reference sequence should be presenting in the same directory. See Picard manual for details ', required=True)
 	args = parser.parse_args()
+	
+	#sanity check input file name
+	#remove trailing / if there is one
+	args.input = args.input.rstrip('/')
 	
 	#get batch name from the input directory
 	batchname = os.path.basename(args.input)

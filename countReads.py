@@ -1,4 +1,17 @@
 #!/usr/bin/python3
+"""
+Assign reads to genes or exons using the HTSeq toolkit http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html 
+
+This program takes the following basic steps:
+
+Sort bam file into queryname order using samtools sort. This puts paired reads on adjacent lines. The output from this is piped directly to samtools view
+
+samtools view converts the sorted bam to sam and pipes it directly to one of either htseq-count or dexseq_count which assigns reads to genes or exons respectively
+
+Each bamfile is handled in a separate process so multiple files can be counted in parallel by setting the -n argument. Type python3 countReads.py -h for commandline usage instructions
+
+"""
+
 
 import NGSutilities
 import os
@@ -77,9 +90,9 @@ def countGenes(c):
 def countExons(c):
 	""" Takes a samtools sort command, executes it, and pipes the output to samtools view.
 	
-	samtools view converts the stream from bam to sam and pipes it through to htseq-count. 
+	samtools view converts the stream from bam to sam and pipes it through to dexseq_count. 
 	
-	htseq-count assigns each read to a gene based on the contents of a gtf file describing the coordinates of genes and other features in the genome with the htseq-count mode option set to intersection-nonempty
+	dexseq_count assigns each read to an exon/counting bin. This requires a modified gtf file that has been processed with the tool dexseq_prepare_annotation.py from the DEXSeq Bioconductor package to split overlapping exons into counting bins. The initial gtf prior to modification should describe the coordinates of genes, exons and other annotations in the genome such as those available from the GENCODE project http://www.gencodegenes.org/
 	
 	Arguments
 	---------
@@ -126,7 +139,7 @@ def countExons(c):
 
 if __name__ == "__main__":
 	#parse commandline arguments
-	parser = argparse.ArgumentParser(prog='countReadsGenes.py', description='Use the HTseq script htseq-count to assign reads to genes for a set of bam files. http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html. This requires that the HTSeq toolkit has been installed on the current system and can be accessed by typing htseq-count at the commandline')
+	parser = argparse.ArgumentParser(prog='countReads.py', description='Use the HTseq tools to assign reads per gene and per exon for a set of bam files. http://www-huber.embl.de/users/anders/HTSeq/doc/overview.html. This requires that the HTSeq toolkit has been installed on the current system and can be accessed by typing htseq-count at the commandline. In addition the script dexseq_count from the Bioconductor package DEXSeq must also be installed and accessible by typing dexseq_count at the commandline')
 	
 	parser.add_argument('-i', '--input', help='Input directory. Do not include the trailing / at the end of the filename as this will affect the internal operation of the script', required=True)
 	
@@ -139,6 +152,10 @@ if __name__ == "__main__":
 	parser.add_argument('-s', '--stranded', help="Allows setting of the htseq-count -s flag to specify whether the data is from a strand-specific assay. Specify 'yes', 'no', or 'reverse' (default: no). 'reverse' means 'yes' with reversed strand interpretation", default='no')
 	
 	args = parser.parse_args()
+	
+	#sanity check input file name
+	#remove trailing / if there is one
+	args.input = args.input.rstrip('/')
 	
 	#get batch name from the input directory
 	batchname = os.path.basename(args.input)
