@@ -56,7 +56,7 @@ def compileCommands(files, genome, output):
 			os.makedirs(os.path.dirname(savepath))
 		
 		#construct the command
-		alignment = 'star --genomeDir ' + genome + ' --runThreadN 1 --outFileNamePrefix ' + savepath + ' --readFilesIn ' + left[i] + ' ' + right[i] + ' --outStd SAM --outFilterMismatchNmax 2 --genomeLoad LoadAndKeep --outSAMstrandField intronMotif'
+		alignment = 'star --genomeDir ' + genome + ' --runThreadN 1 --outFileNamePrefix ' + savepath + ' --readFilesIn ' + left[i] + ' ' + right[i] + ' --readFilesCommand zcat --outStd SAM --outFilterMismatchNmax 2 --genomeLoad LoadAndKeep --outSAMstrandField intronMotif'
 		commands.append(alignment)
 		
 	return commands

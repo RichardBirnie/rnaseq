@@ -154,5 +154,12 @@ if __name__ == "__main__":
 	#a list as arguments, and executes the function with every member of the
 	#list as the sole arguement.
 	print('Starting QC')
-	outputs = p.map(runCommand, commands)
+	#outputs = p.map(runCommand, commands)
 	print('QC Complete')
+	
+	#compile a summary report for all samples in this batch
+	summary = 'Rscript CompileAlignmentReport.R --args /home/nrb62/Projects/RNAseqPipeline/AlignmentReport.Rmd ' +  os.path.join(args.input.replace('BamFiles', 'QC/BamQC'), 'SummaryReport.md') + ' ' + args.input.replace('BamFiles', 'QC/BamQC')
+	summary = shlex.split(summary)
+	summary = subprocess.check_call(summary)
+	
+	

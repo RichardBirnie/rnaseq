@@ -1,0 +1,521 @@
+```{r, echo=FALSE, eval=FALSE, include=FALSE}
+#First chunk is CSS styling information to control appearance of the report
+#Ugly but it makes the html file self contained
+```
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 14px;
+   width: 80%;
+   margin-left: auto;
+   margin-right: auto;
+   text-align: centre;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em;
+   text-align: centre;
+   width: 80%;
+   margin-left: auto;
+   margin-right: auto;
+   margin-top: 20px;
+   margin-bottom: 20px;
+}
+
+h2 { 
+   font-size:1.8em;
+   text-align: centre;
+   width: 80%;
+   margin-left: auto;
+   margin-right: auto;
+   margin-top: 20px;
+   margin-bottom: 20px;
+}
+
+h3 { 
+   font-size:1.4em; 
+   text-align: centre;
+   width: 80%;
+   margin-left: auto;
+   margin-right: auto;
+   margin-top: 20px;
+   margin-bottom: 20px;
+}
+
+h4 { 
+   font-size:1.0em; 
+   text-align: centre;
+   width: 80%;
+   margin-left: auto;
+   margin-right: auto;
+   margin-top: 20px;
+   margin-bottom: 20px;
+}
+
+h5 { 
+   font-size:0.9em; 
+   text-align: centre;
+   width: 80%;
+   margin-left: auto;
+   margin-right: auto;
+   margin-top: 20px;
+   margin-bottom: 20px;
+}
+
+h6 { 
+   font-size:0.8em; 
+   text-align: centre;
+   width: 80%;
+   margin-left: auto;
+   margin-right: auto;
+   margin-top: 20px;
+   margin-bottom: 20px;
+}
+
+p {
+   margin-left: auto;
+   margin-right: auto;
+   margin-top: 20px;
+   margin-bottom: 20px;
+   width: 80%;
+   text-align: justify;
+}
+
+img {
+  margin-left: 15%;
+  margin-rigth: 25%;
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {  
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+</style>
+
+```{r Function Definitions, echo=FALSE, include=FALSE}
+mkdir <- function(file){
+  #create a directory if it does not already exist
+  #recursively create parent directories if required
+  if(!file.exists(file)){ dir.create(file, recursive=TRUE, showWarnings=FALSE)}
+}
+
+#functions to read the mapping metrics produced from RNA-SeQC
+loadMetrics <- function(filenames){
+  #take a list of metrics files
+  for(i in 1:length(filenames)){
+    metrics <- readMetrics(filenames[i]) #read the file
+    
+    if(i==1){
+      #if this is the first file take the whole thing to get both data and column headers
+      output <- metrics
+    } else {
+      output <- rbind(output, metrics[1,]) #combine the data with the previously loaded data
+    }
+  }
+  return(output)
+}
+
+readMetrics <- function(file){
+  #read in the metrics file
+  m <- read.table(file, header=T, row.names=NULL, sep='\t', quote="", strip.white=T, stringsAsFactors=F)
+  colnames(m) <- gsub('\\s', '',  gsub('\\.', '', colnames(m))) #fix column names
+  return(m)
+}
+
+loadCoverageMetrics <- function(filenames){
+  require(stringr)
+  #take a list of metrics files
+  for(i in 1:length(filenames)){
+    metrics <- round(as.numeric(readLines(filenames[i])), 2) #read the file
+    metrics <- metrics[c(1:4, 7, 11:13)]
+    
+    if(i==1){
+      #if this is the first file take the whole thing to get both data and column headers
+      names <- c('MeanPerBaseCov', 'MeanCV', 'NumCovered5prime', '5prime200bpNorm',
+                 'NumCovered3prime', '3prime200bpNorm', 'NumGaps', 'CumulGapLength')
+      output <- metrics
+      names(output) <- names
+    } else {
+      output <- rbind(output, metrics) #combine the data with the previously loaded data
+    }
+  }
+  
+  rownames(output) <- NULL
+  output <- data.frame(Sample=basename(filenames), output, BiasRatio=output[,'3prime200bpNorm']/output[,'5prime200bpNorm'])
+  return(output)
+}
+
+plotBarplot <- function(mr, samples, yl, col='seagreen', ...){
+  #Plot the number of reads/sample for a vector of mapped read counts
+  # mr - vector of the number of mapped reads/sample in millions
+  # samples - vector of sample names
+  bars <- barplot(mr, col=col, las=2, cex.names=1.2, cex.axis=1.2, names.arg=samples, ...)
+  title(ylab=yl, cex.lab=1.2, line=4)
+  box()
+  bars
+}
+
+plotDist <- function(mr, xpos, showMed=TRUE, ...){
+  #Plot the density distribution for a vector of mapped read counts
+  # mr - vector of the number of mapped reads/sample in millions
+  # xpos - sequence of positions to control display of x-axis
+  # showMed - logical. Whether to draw a line indicating the median  
+  d <- density(mr)
+  plot(d, las=2, cex.axis=1.2, cex.lab=1.2, xaxt='n', ... )
+  axis(1, at=xpos, labels=xpos, cex.axis=1.2, cex.lab=1.2)
+  
+  if(showMed){
+    par(xpd=FALSE)
+    medMapped = median(mr)
+    abline(v=medMapped, lty='dashed')
+    mtext(paste('Median', medMapped, sep='='), at=medMapped, side=3, cex.axis=1.2)
+  }
+}
+
+plotFeatureMap <- function(rates, samples, header='Mapping to Genomic Features', ...){
+  #Plot the proportion of reads that map to particular genomic features as reported by the RNASeQC tool
+  # rates - A matrix containing the proportion of reads that map to each feature type. One sample/row, one feature
+  # type/column. Features are typically: Exons, Introns, Intergenic and rRNA
+  colours <- c('seagreen', 'palegreen3', 'royalblue', 'indianred')
+  par(xpd=TRUE, mar=c(10,4,4,6.5))
+  bp <- barplot(rates, col=colours, cex.names=1.2, cex.axis=1.2, cex.lab=1.2,
+                names.arg=samples, axis.lty=1, las=2, ...)
+  title(main=header, ylab='Proportion of reads')
+  box(bty='l', lwd=1.5)
+  legend(x=max(bp)+0.7, y=1, legend=rownames(rates), fill=colours)
+}
+
+boxplotFeatureMap <- function(rates, ...){
+  #Draw boxplots of the proportion of reads that map to particular genomic features as reported by the RNASeQC tool across all samples
+  # rates - A matrix containing the proportion of reads that map to each feature type. One sample/row, one feature
+  # type/column. Features are typically: Exons, Introns, Intergenic and rRNA
+  colours <- c('seagreen', 'palegreen3', 'royalblue', 'indianred')
+  boxplot(t(rates), col=colours, ylim=c(0,1), cex.names=0.7, cex.axis=1, yaxt='n', ...)
+  axis(2, las=2, cex.axis=1.2)
+  title(ylab='Proportion of reads', cex.lab=1.2, line=3)
+}
+
+
+plotBiasRatio <- function(cvg, window, file){
+  #plot 3'/5' ratio for each sample
+  # file - file path to save the output
+  # cvg - Vector of the mean coverage values for each sample base on a sample of 1000 genes with 'window' expression level
+  # window - Indicates whether the coverage values correspond to genes with low, medium or high expression as reported by RNA-SeQC
+  png(file, width=16, height=12, units='cm', res=300)
+  biasRatio <- cvg[,'3prime200bpNorm']/cvg[,'5prime200bpNorm']
+  barplot(biasRatio, ylim=c(0, max(biasRatio) + (max(biasRatio)*0.2)), las=2, cex.names=0.7, cex.axis=0.7, col='seagreen', names.arg=samples)
+  title(main="3'/5' Ratio", ylab="3'/5' ratio")
+  box()
+  graphics.off()
+}
+```
+
+RNA-Seq Alignment Quality Control Report
+========================================
+
+`r date()`
+
+This report presents a summary of the QC metrics generated for each individual sample using the software [RNA-SeQC](http://www.broadinstitute.org/cancer/cga/rna-seqc)
+
+
+```{r setup, echo=FALSE, include=FALSE}
+#grab commandline arguments
+args <- commandArgs(trailingOnly=TRUE)
+
+#load libraries
+# library(knitr)
+
+#set path to directory containing individual sample QC reports
+#and create directories for output
+metFiles <- Sys.glob(paste0(args[4], '/*/metrics.tsv'))
+resultDir <- args[4]
+mkdir(resultDir)
+plotDir <- file.path(resultDir, 'BatchSummaryPlots')
+mkdir(plotDir)
+
+# set some knitr options
+opts_chunk$set(echo=FALSE, fig.path=paste(plotDir, '', sep='/'), fig.width=10)
+
+#####################
+## Mapping Metrics ##
+#####################
+#load mapping metrics, returns a data frame
+mapMetrics <- loadMetrics(metFiles)
+
+#get some readable sample names
+samples <- gsub('Sample_', '', mapMetrics$Sample)
+
+######################
+## Coverage Metrics ##
+######################
+#load the coverage metrics for low, medium and high expressed genes
+lowexpr <- Sys.glob(paste0(resultDir, '/*/*/lowexpr/*.DoCTranscriptsSummary'))
+cvgLow <- loadCoverageMetrics(lowexpr)
+cvgLow$Sample <- gsub('.DoCTranscriptsSummary', '', cvgLow$Sample)
+medexpr <- Sys.glob(paste0(resultDir, '/*/*/medexpr/*.DoCTranscriptsSummary'))
+cvgMed <- loadCoverageMetrics(medexpr)
+cvgMed$Sample <- gsub('.DoCTranscriptsSummary', '', cvgMed$Sample)
+highexpr <- Sys.glob(paste0(resultDir, '/*/*/highexpr/*.DoCTranscriptsSummary'))
+cvgHigh <- loadCoverageMetrics(highexpr)
+cvgHigh$Sample <- gsub('.DoCTranscriptsSummary', '', cvgHigh$Sample)
+```
+
+Read Mapping
+------------
+
+### Total Mapped Reads
+
+```{r millionMapped}
+millionMapped <- round(mapMetrics$Mapped/1e+06, 2)
+spread <- paste0(min(millionMapped), '-', max(millionMapped))
+```
+
+
+*Upper panel*: Number of successfully mapped reads in millions for each individual sample.
+
+*Lower panel*: Distribution across all samples. 
+
+**Median number of mapped reads for the current data set = `r round(median(millionMapped), 2)` million, Range = `r spread` million**
+
+```{r TotalMappedReads, fig.height=8}
+#plot the number of mapped reads per sample
+par(mar=c(10,5,4,1))
+xpos <- plotBarplot(millionMapped, samples=samples, main='Mapped Reads', yl='Mapped reads (millions)', ylim=c(0, 1))
+```
+
+```{r MappedReadDist}
+#Distribution of mapped reads/sample
+plotDist(millionMapped, xlim=c(0, 1), xpos=seq(0, 1, 0.1), main='Distribution of Mapped reads', xlab='Mapped Reads (millions)')
+```
+
+### Ribosomal RNA Mapped Reads
+
+```{r rRNAMapped}
+rRNAMapped <- round(mapMetrics$rRNA/10^6, 2)
+rRNArate <- round(mapMetrics$rRNArate, 4)*100
+rateSpread <- paste0(min(rRNArate), '-', max(rRNArate))
+```
+
+
+*Upper Panel*: Number of reads (millions) that map to known ribosomal RNA genes for each sample.
+
+*Lower Panel*: Distribution of rRNA mapped reads across all samples shown as a percentage of all mapped reads.
+
+**Median rRNA mapped reads for the current data set = `r round(median(rRNArate), 1)`%. Range = `r rateSpread`%**
+
+```{r rRNA_MappedReads, fig.height=8}
+#plot the number of reads mapping to rRNA/sample
+par(mar=c(10,5,4,1))
+xpos <- plotBarplot(rRNAMapped, samples=samples, main='rRNA Mapped Reads', yl='Mapped reads (millions)', ylim=c(0, 1))
+```
+
+```{r rRNA_MappedReadDist}
+#distribution as a proportion of total mapped reads
+plotDist(rRNArate, xlim=c(0, 100), xpos=seq(0, 100, 10), main='Distribution of rRNA Mapped reads', xlab='% rRNA Mapped Reads')
+```
+
+###  Fragment Length
+
+```{r MeanFragment Length}
+fragmentLength <- mapMetrics$FragmentLengthMean
+fSpread <- paste0(min(fragmentLength), '-', max(fragmentLength))
+```
+
+This represents the mean fragment length in the sequencing library. If the fragment length is <200bp and the sequencing is 100bp paired end then the two reads will overlap in the middle
+
+**Mean Fragment for this data set length across all samples = `r round(mean(fragmentLength), 2)`bp. Range = `r fSpread`bp**
+
+```{r FragmentLength, fig.height=8}
+par(mar=c(10,5,4,1))
+xpos <- plotBarplot(fragmentLength, samples=samples, ylim=c(0, max(fragmentLength)*1.2), main='Mean Fragment Length', yl='Mean Fragment Length (bp)')
+```
+
+### Feature Mapping
+
+*Upper Panel*: The proportion of reads that map to known genomic features based on the current human genome annotation - hg19 as of `r format(Sys.Date(), '%d-%m-%Y')` 
+
+*Lower Panel*: Boxplots show the distribution across all samples for each type of feature.
+
+Typically, ~70-80% of reads map to exons, 10-20% map to introns, 3-5% map to intergenic regions.
+
+```{r FeatureMappingRate, fig.width=11.25}
+#Plot the proportion of reads that map to different genomic features as defined by RNA-SeQC
+featureMappingRate <- rbind(mapMetrics$ExonicRate, mapMetrics$IntronicRate, mapMetrics$IntergenicRate, mapMetrics$rRNArate)
+rownames(featureMappingRate) <- c('Exons', 'Introns', 'Intergenic', 'rRNA')
+colnames(featureMappingRate) <- samples
+plotFeatureMap(featureMappingRate, samples=samples)
+```
+
+```{r FeatureMappingAverage}
+boxplotFeatureMap(featureMappingRate)
+```
+
+### Coverage
+```{r MeanCoverage}
+MeanPerBaseCov_Low <- cvgLow[,'MeanPerBaseCov']
+lowSpread <- paste0(min(MeanPerBaseCov_Low), '-', max(MeanPerBaseCov_Low))
+MeanPerBaseCov_Med <- cvgMed[,'MeanPerBaseCov']
+medSpread <- paste0(min(MeanPerBaseCov_Med), '-', max(MeanPerBaseCov_Med))
+```
+
+Depth of Coverage measures the number of reads that align to each individual base pair. The effect of gene expression on coverage is illustrated by ranking the genes in descending order of expression level then calculating coverage for the bottom 1000 lowest expressed genes and the middle 1000 (median +/- 500 genes) respectively. The middle 1000 provides a reasonable estimate of the average coverage in the dataset as a whole. The bottom 1000 provides an estimate of the lower limit of coverage for the most weakly expressed genes. Coverage is dependent on the total number of reads collected. Increasing the number of reads will increase coverage for all genes.
+
+*Barplots*: Mean Coverage across all bases for each individual sample
+
+*Density Plots*: Distribtion of mean coverage across all samples. These plots illustrate the distribution of coverage across the whole data set.
+
+**Data set median coverage for lowest expressed genes = `r round(median(MeanPerBaseCov_Low), 2)`X. Range = `r lowSpread`X**
+
+**Data set median coverage for medium expressed genes = `r round(median(MeanPerBaseCov_Med), 2)`X. Range = `r medSpread`X**
+
+
+```{r MeanCoverage_Low, fig.height=8}
+par(mar=c(10,6,4,1))
+xpos <- plotBarplot(MeanPerBaseCov_Low, samples, ylim=c(0, max(MeanPerBaseCov_Low)*1.2), main='Mean Coverage - 1000 Lowest Expressed Genes', yl='Mean Coverage per base')
+```
+
+```{r MeanCoverage_Med, fig.height=8}
+par(mar=c(10,6,4,1))
+xpos <- plotBarplot(MeanPerBaseCov_Med, samples, ylim=c(0, max(MeanPerBaseCov_Med)*1.2), main='Mean Coverage - 1000 Median Expressed Genes', yl='Mean Coverage per base')
+```
+
+```{r MeanCoverageDist_Low, fig.height=8}
+par(xpd=FALSE)
+plotDist(MeanPerBaseCov_Low, xlim=c(0, max(MeanPerBaseCov_Low) * 1.5), xpos=seq(0, max(MeanPerBaseCov_Low) * 1.5, 0.01), main='Mean Coverage - 1000 Lowest Expressed Genes',
+         xlab='Mean Coverage')
+```
+
+```{r MeanCoverageDist_Med, fig.height=8}
+plotDist(MeanPerBaseCov_Med, xlim=c(0, max(MeanPerBaseCov_Med) * 1.2), xpos=seq(0, max(MeanPerBaseCov_Med) * 1.2, 0.1), main='Mean Coverage - 1000 Median Expressed Genes',
+         xlab='Mean Coverage')
+```
+
+### 3'/5' Bias Ratio
+
+```{r BiasRatio, error=FALSE}
+biasRatio_Low <- cvgLow[,'BiasRatio']
+biasSpread_Low <- paste0(round(min(biasRatio_Low),1), '-', round(max(biasRatio_Low), 1))
+biasRatio_Med <- cvgMed[,'BiasRatio']
+biasSpread_Med <- paste0(round(min(biasRatio_Med),1), '-', round(max(biasRatio_Med), 1))
+```
+
+The bias ratio is calculated based on the coverage of the last 200bp at the 5' and 3' end of each transcript. The mean coverage in these 2 regions is calculated across all samples. The bias ratio is then: mean coverage 3' / mean coverage 5'
+
+Note that in general the bias ratio is inversely proportional to expression
+
+**Median Bias Ratio - 1000 lowest expressed genes = `r round(median(biasRatio_Low), 1)`. Range = `r biasSpread_Low`**
+
+**Median Bias Ratio - 1000 medium expressed genes = `r round(median(biasRatio_Med), 1)`. Range = `r biasSpread_Med`**
+
+```{r BiasRatio_Low, fig.height=8, error=FALSE}
+par(mar=c(10,6,4,1))
+xpos <- plotBarplot(biasRatio_Low, samples, ylim=c(0, max(biasRatio_Low, na.rm=TRUE)*1.5), main="3'/5' Bias Ratio - 1000 Lowest Expressed Genes", yl="3'/5' Bias Ratio")
+```
+
+```{r BiasRatio_Med, fig.height=8, error=FALSE}
+par(mar=c(10,6,4,1))
+xpos <- plotBarplot(biasRatio_Med, samples, ylim=c(0, max(biasRatio_Med)*1.5), main="3'/5' Bias Ratio - 1000 Median Expressed Genes", yl="3'/5' Bias Ratio")
+```
+
+```{r RenderOutput, include=FALSE, eval=FALSE}
+library(knitr)
+library(markdown)
+
+#render output as html
+fp <- file.path('/home', 'data', 'pbt', 'RNASeq', 'QC', 'BamQC', 'SampledReads', 'SummaryReport.md')
+knit(file.path('/home','nrb62','Projects','RNAseqPipeline','AlignmentReport.Rmd'), output=fp)
+htmlFile <- sub('.md', '.html', fp)
+markdownToHTML(file=fp, output=htmlFile)
+file.remove(fp)
+```
