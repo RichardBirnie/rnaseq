@@ -154,7 +154,7 @@ if __name__ == "__main__":
 	#a list as arguments, and executes the function with every member of the
 	#list as the sole arguement.
 	print('Starting QC')
-	#outputs = p.map(runCommand, commands)
+	outputs = p.map(runCommand, commands)
 	print('QC Complete')
 	
 	#compile a summary report for all samples in this batch
