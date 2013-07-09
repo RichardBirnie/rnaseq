@@ -38,25 +38,25 @@ if __name__ == "__main__":
 	
 	print('################# Start pipeline ################')
 	
-	##run fastqc
-	#print('Run Fastqc')
-	#fastqc = 'python3 runFastqc.py -i ' + args.input + ' -n ' + args.ncores
-	#fastqc = shlex.split(fastqc)
-	#fastqc = subprocess.check_call(fastqc)
+	#run fastqc
+	print('Run Fastqc')
+	fastqc = 'python3 runFastqc.py -i ' + args.input + ' -n ' + args.ncores
+	fastqc = shlex.split(fastqc)
+	fastqc = subprocess.check_call(fastqc)
 	
-	##run star alignment
-	#print('Run Star alignment')
-	#star = 'python3 runStar.py -i ' + args.input + ' -g /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/STARgenomes/hg19 -n ' + args.ncores
-	#star = shlex.split(star)
-	#star = subprocess.check_call(star)
+	#run star alignment
+	print('Run Star alignment')
+	star = 'python3 runStar.py -i ' + args.input + ' -g /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/STARgenomes/hg19 -n ' + args.ncores
+	star = shlex.split(star)
+	star = subprocess.check_call(star)
 	
-	##run QC on bam file
-	#print('Run post-alignment QC')
+	#run QC on bam file
+	print('Run post-alignment QC')
 	bam = args.input
 	bam = bam.replace('rawData', 'BamFiles')
-	#bamqc = 'python3 runAlignmentQC.py -i ' +  bam + ' -r /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa -n ' + args.ncores
-	#bamqc = shlex.split(bamqc)
-	#bamqc = subprocess.check_call(bamqc)
+	bamqc = 'python3 runAlignmentQC.py -i ' +  bam + ' -r /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa -n ' + args.ncores
+	bamqc = shlex.split(bamqc)
+	bamqc = subprocess.check_call(bamqc)
 	
 	#count reads per gene and per exon
 	print('Count Reads')

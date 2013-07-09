@@ -4,11 +4,13 @@ Assign reads to genes or exons using the HTSeq toolkit http://www-huber.embl.de/
 
 This program takes the following basic steps:
 
-Sort bam file into queryname order using samtools sort. This puts paired reads on adjacent lines. The output from this is piped directly to samtools view
+Sort bam file into queryname order using samtools sort. This puts paired reads on adjacent lines. The output from this is piped directly to samtools view. The sorting step creates a series of temporary files if the whole alignment cannot be fit into memory. This is a feature of samtools sort and is controlled by the -m parameter. Currently this is set to 4GB per process. This will allow a full flowcell of 28 samples to run in 112GB RAM. If the bam files are larger than 4GB then it is important to ensure there is enough free disk space to account for this, particularly if processing multiple bam files in parallel. Sorting 1 bam file requires ~1.5-2X size of the bam file.
 
 samtools view converts the sorted bam to sam and pipes it directly to one of either htseq-count or dexseq_count which assigns reads to genes or exons respectively
 
-Each bamfile is handled in a separate process so multiple files can be counted in parallel by setting the -n argument. Type python3 countReads.py -h for commandline usage instructions
+Each bamfile is handled in a separate process so multiple files can be counted in parallel by setting the -n argument. Note that each step in sort/view/count will use 1 cpu core so setting -n 6 will use 18 cores. This is a side effect of piping the three steps  together and is necessary to avoid creating multiple large temporary files.
+
+Type python3 countReads.py -h in a terminal for commandline usage instructions
 
 """
 
@@ -35,7 +37,8 @@ def compileCommands(files):
 	"""
 	commands = []
 	for f in files:
-		namesort = 'samtools sort -no ' + f + ' ' + os.devnull
+		prefix = os.path.dirname(f) + '/' + os.path.basename(f).replace('_sortedRG.bam', '')
+		namesort = 'samtools sort -no -m 4000000000 ' + f + ' ' + prefix
 		commands.append(namesort)
 	
 	return commands
@@ -64,7 +67,7 @@ def countGenes(c):
 	#This is required by htseq-count to detect paired reads
 	#pipe output to samtools view to get it into SAM format
 	namesort = shlex.split(c)
-	infile = namesort[3]
+	infile = namesort[5]
 	nsorted = subprocess.Popen(namesort, stdout=subprocess.PIPE)
 	
 	#catch stdout from samtools sort, convert to sam and pipe directly to htseq-count
@@ -110,7 +113,8 @@ def countExons(c):
 	#This is required by htseq-count to detect paired reads
 	#pipe output to samtools view to get it into SAM format
 	namesort = shlex.split(c)
-	infile = namesort[3]
+	infile = namesort[5]
+	print(infile)
 	nsorted = subprocess.Popen(namesort, stdout=subprocess.PIPE)
 	
 	#catch stdout from samtools sort, convert to sam and pipe directly to htseq-count
@@ -136,6 +140,7 @@ def countExons(c):
 	#cts = subprocess.Popen(cts, stdin=sam.stdout)
 	sam.stdout.close()
 	ret = cts.communicate()
+
 
 if __name__ == "__main__":
 	#parse commandline arguments
@@ -173,8 +178,8 @@ if __name__ == "__main__":
 	print('Starting Counting Reads per Gene')
 	#make a Pool object from the multiprocessing package.
 	#processes argument specifies how many cores to use
-	p1 = Pool(processes=int(args.ncores))
-	outputs = p1.map(countGenes, commands)
+	#p1 = Pool(processes=int(args.ncores))
+	#outputs = p1.map(countGenes, commands)
 	print('Finished Counting Reads per Genes')
 	
 	print('Starting Counting Reads per Exon')
