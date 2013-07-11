@@ -178,8 +178,8 @@ if __name__ == "__main__":
 	print('Starting Counting Reads per Gene')
 	#make a Pool object from the multiprocessing package.
 	#processes argument specifies how many cores to use
-	#p1 = Pool(processes=int(args.ncores))
-	#outputs = p1.map(countGenes, commands)
+	p1 = Pool(processes=int(args.ncores))
+	outputs = p1.map(countGenes, commands)
 	print('Finished Counting Reads per Genes')
 	
 	print('Starting Counting Reads per Exon')
