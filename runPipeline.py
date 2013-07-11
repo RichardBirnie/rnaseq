@@ -49,14 +49,14 @@ if __name__ == "__main__":
 	fastqc = 'python3 runFastqc.py -i ' + args.input + ' -n ' + args.ncores
 	logging.info(datetime.datetime.now().ctime() + ': ' + fastqc) #log the command string
 	fastqc = shlex.split(fastqc)
-	#fastqc = subprocess.check_call(fastqc)
+	fastqc = subprocess.check_call(fastqc)
 	
 	#run star alignment
 	print('Run Star alignment')
 	star = 'python3 runStar.py -i ' + args.input + ' -g /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/STARgenomes/hg19 -n ' + args.ncores
 	logging.info(datetime.datetime.now().ctime() + ': ' + star)
 	star = shlex.split(star)
-	#star = subprocess.check_call(star)
+	star = subprocess.check_call(star)
 	
 	#run QC on bam file
 	print('Run post-alignment QC')
@@ -65,14 +65,14 @@ if __name__ == "__main__":
 	bamqc = 'python3 runAlignmentQC.py -i ' +  bam + ' -r /home/data/genomes/Homo_sapiens/UCSC/hg19/Sequence/WholeGenomeFasta/genome.fa -n ' + args.ncores
 	logging.info(datetime.datetime.now().ctime() + ': ' + bamqc)
 	bamqc = shlex.split(bamqc)
-	#bamqc = subprocess.check_call(bamqc)
+	bamqc = subprocess.check_call(bamqc)
 	
 	#count reads per gene and per exon
 	print('Count Reads')
 	count = 'python3 countReads.py -i ' + bam + ' -g /home/data/genomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/Gencode17/gencode.v17.annotation.gtf -f /home/data/genomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/Gencode17/gencode.v17.annotation.flattened.for.dexseq.gtf -n ' + args.ncores
 	logging.info(datetime.datetime.now().ctime() + ': ' + count)
 	count = shlex.split(count)
-	#count = subprocess.check_call(count)
+	count = subprocess.check_call(count)
 	
 	print('Pipeline complete. Output files can be found at ' + os.path.dirname(os.path.dirname(args.input)))
 	logging.info(' Pipeline complete. Output files can be found at ' + os.path.dirname(os.path.dirname(args.input)))
